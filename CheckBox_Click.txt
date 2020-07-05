@@ -1,0 +1,25 @@
+Sub CheckBox_Click()
+'
+' CheckBox_Click Macro
+'
+With ActiveSheet
+    If .CheckBoxes("Check Box 1").Value = xlOn Then
+        .ChartObjects("Chart 6").Visible = False
+        .ChartObjects("Chart 5").Visible = False
+        .ChartObjects("Chart 4").Visible = False
+        .ChartObjects("Chart 1").Visible = True
+        .ChartObjects("Chart 2").Visible = True
+        .ChartObjects("Chart 3").Visible = True
+        .Shapes("TextBox 3").Visible = True
+    ElseIf .CheckBoxes("Check Box 1").Value = xlOff Then
+        .ChartObjects("Chart 6").Visible = True
+        .ChartObjects("Chart 5").Visible = True
+        .ChartObjects("Chart 4").Visible = True
+        .ChartObjects("Chart 1").Visible = False
+        .ChartObjects("Chart 2").Visible = False
+        .ChartObjects("Chart 3").Visible = False
+        .Shapes("TextBox 3").Visible = False
+    End If
+End With
+'
+End Sub

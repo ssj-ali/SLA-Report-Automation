@@ -1,0 +1,586 @@
+Sub SLAReportAddIn()
+'
+' SLAReport1 Macro
+' Count-wise SLA Report
+'
+' Keyboard Shortcut: Ctrl+m
+'
+'Declare Variables
+Dim PSheet As Worksheet
+Dim DSheet As Worksheet
+Dim PCache1 As PivotCache
+Dim PCache2 As PivotCache
+Dim PCache3 As PivotCache
+Dim PCache4 As PivotCache
+Dim PCache5 As PivotCache
+Dim PCache6 As PivotCache
+Dim PTable1 As PivotTable
+Dim PTable2 As PivotTable
+Dim PTable3 As PivotTable
+Dim PTable4 As PivotTable
+Dim PTable5 As PivotTable
+Dim PTable6 As PivotTable
+Dim PRange As Range
+Dim LastRow As Long
+Dim LastCol As Long
+
+Set DSheet = ActiveSheet
+
+'Define Data Range
+LastRow = DSheet.Cells(Rows.Count, 1).End(xlUp).Row
+LastCol = DSheet.Cells(1, Columns.Count).End(xlToLeft).Column
+
+'Check for Conditions
+Dim i As Long
+Dim Flag As Long
+Flag = 0
+For i = 1 To LastCol
+    If ActiveSheet.Cells(1, i) = "Date Closed" Then
+        Flag = Flag + 1
+
+    ElseIf ActiveSheet.Cells(1, i) = "SLA Due Date" Then
+        Flag = Flag + 1
+        
+    ElseIf ActiveSheet.Cells(1, i) = "Title" Then
+        Flag = Flag + 1
+
+    ElseIf ActiveSheet.Cells(1, i) = "Type" Then
+        Flag = Flag + 1
+    
+    ElseIf ActiveSheet.Cells(1, i) = "L&T Subcategory" Then
+        Flag = Flag + 1
+
+    End If
+Next i
+If Flag <> 5 Then
+   MsgBox "ActiveSheet does not contain one or more of these fields:" & vbCrLf & "Date Closed" & vbCrLf & "SLA Due Date" & vbCrLf & "Title" & vbCrLf & "Type" & vbCrLf & "L&T Subcategory"
+   Exit Sub
+End If
+   
+'Make SLA Result Column
+Dim duedate As String
+Dim closedate As String
+Dim CheckSLAResult As Integer
+CheckSLAResult = 0
+    
+For i = 1 To LastCol
+    If ActiveSheet.Cells(1, i) = "Date Closed" Then
+        closedate = ActiveSheet.Cells(2, i).Address(False, False)
+
+    ElseIf ActiveSheet.Cells(1, i) = "SLA Due Date" Then
+        duedate = ActiveSheet.Cells(2, i).Address(False, False)
+
+    ElseIf ActiveSheet.Cells(1, i) = "SLA Result" Then
+        CheckSLAResult = 1
+
+    End If
+Next i
+    
+If CheckSLAResult = 0 Then
+    ActiveSheet.Cells(1, LastCol + 1) = "SLA Result"
+    Range(ActiveSheet.Cells(2, LastCol + 1), ActiveSheet.Cells(LastRow, LastCol + 1)).Formula = "=IF(" & closedate & "<=" & duedate & ",""Pass"",""Fail"")"
+End If
+
+'Update data range
+LastRow = DSheet.Cells(Rows.Count, 1).End(xlUp).Row
+LastCol = DSheet.Cells(1, Columns.Count).End(xlToLeft).Column
+Set PRange = DSheet.Cells(1, 1).Resize(LastRow, LastCol)
+
+'Insert a New Blank Worksheet
+On Error Resume Next
+Application.DisplayAlerts = False
+Worksheets("SLAPivotTables").Delete
+Sheets.Add Before:=ActiveSheet
+ActiveSheet.Name = "SLAPivotTables"
+Application.DisplayAlerts = True
+Set PSheet = Worksheets("SLAPivotTables")
+
+'PIVOT CHART 1
+'Define Pivot Cache
+Set PCache1 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 2), _
+TableName:="PivotTable1")
+
+'Insert Blank Pivot Table
+Set PTable1 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable1")
+
+'Insert Row Fields
+With ActiveSheet.PivotTables("PivotTable1").PivotFields("Type")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Column Fields
+With ActiveSheet.PivotTables("PivotTable1").PivotFields("SLA Result")
+.Orientation = xlColumnField
+.Position = 1
+.PivotItems("(blank)").Visible = False
+End With
+
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable1").AddDataField ActiveSheet.PivotTables("PivotTable1").PivotFields("Title"), "Count of Title", xlCount
+ActiveSheet.PivotTables("PivotTable1").PivotFields ("Count of Title")
+
+'Format Pivot Table
+ActiveSheet.PivotTables("PivotTable1").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable1").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable1").RowGrand = False
+
+
+'PIVOT CHART 2
+'Define Pivot Cache
+Set PCache2 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 6), _
+TableName:="PivotTable2")
+
+'Insert Blank Pivot Table
+Set PTable2 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable2")
+
+'Insert Row Fields
+With ActiveSheet.PivotTables("PivotTable2").PivotFields("Type")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Column Fields
+With ActiveSheet.PivotTables("PivotTable2").PivotFields("SLA Result")
+.Orientation = xlColumnField
+.Position = 1
+.PivotItems("(blank)").Visible = False
+End With
+
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable2").AddDataField ActiveSheet.PivotTables("PivotTable2").PivotFields("Title"), "Count of Title", xlCount
+With ActiveSheet.PivotTables("PivotTable2").PivotFields("Count of Title")
+    .Calculation = xlPercentOfRow
+    .NumberFormat = "0.00%"
+End With
+
+'Format Pivot Table
+ActiveSheet.PivotTables("PivotTable2").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable2").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable2").RowGrand = False
+
+
+'PIVOT CHART 3
+'Define Pivot Cache
+Set PCache3 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 10), _
+TableName:="PivotTable3")
+
+'Insert Blank Pivot Table
+Set PTable3 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable3")
+
+'Insert Row
+With ActiveSheet.PivotTables("PivotTable3").PivotFields("L&T Subcategory")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Column Fields
+With ActiveSheet.PivotTables("PivotTable3").PivotFields("SLA Result")
+.Orientation = xlColumnField
+.Position = 1
+.PivotItems("(blank)").Visible = False
+End With
+
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable3").AddDataField ActiveSheet.PivotTables("PivotTable3").PivotFields("Title"), "Count of Title", xlCount
+ActiveSheet.PivotTables("PivotTable3").PivotFields ("Count of Title")
+
+'Format Chart
+ActiveSheet.PivotTables("PivotTable3").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable3").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable3").RowGrand = False
+
+
+'PIVOT CHART 4
+'Define Pivot Cache
+Set PCache4 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 14), _
+TableName:="PivotTable4")
+
+'Insert Blank Pivot Table
+Set PTable4 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable4")
+
+'Insert Row
+With ActiveSheet.PivotTables("PivotTable4").PivotFields("L&T Subcategory")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Column Fields
+With ActiveSheet.PivotTables("PivotTable4").PivotFields("SLA Result")
+.Orientation = xlColumnField
+.Position = 1
+.PivotItems("(blank)").Visible = False
+End With
+
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable4").AddDataField ActiveSheet.PivotTables("PivotTable4").PivotFields("Title"), "Count of Title", xlCount
+With ActiveSheet.PivotTables("PivotTable4").PivotFields("Count of Title")
+    .Calculation = xlPercentOfRow
+    .NumberFormat = "0.00%"
+End With
+
+'Format Pivot Table
+ActiveSheet.PivotTables("PivotTable4").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable4").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable4").RowGrand = False
+
+'PIVOT CHART 5
+'Define Pivot Cache
+Set PCache5 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 18), _
+TableName:="PivotTable5")
+
+'Insert Blank Pivot Table
+Set PTable5 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable5")
+
+'Insert Row
+With ActiveSheet.PivotTables("PivotTable5").PivotFields("SLA Result")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Data Field
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable5").AddDataField ActiveSheet.PivotTables("PivotTable3").PivotFields("Title"), "Count of Title", xlCount
+ActiveSheet.PivotTables("PivotTable5").PivotFields ("Count of Title")
+
+'Format Pivot Table
+ActiveSheet.PivotTables("PivotTable5").PivotFields("SLA Result").PivotItems("(blank)").Visible = False
+ActiveSheet.PivotTables("PivotTable5").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable5").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable5").RowGrand = False
+
+'PIVOT CHART 6
+'Define Pivot Cache
+Set PCache6 = ActiveWorkbook.PivotCaches.Create _
+(SourceType:=xlDatabase, SourceData:=PRange). _
+CreatePivotTable(TableDestination:=PSheet.Cells(2, 21), _
+TableName:="PivotTable6")
+
+'Insert Blank Pivot Table
+Set PTable6 = PCache.CreatePivotTable _
+(TableDestination:=PSheet.Cells(1, 1), TableName:="PivotTable6")
+
+'Insert Row
+With ActiveSheet.PivotTables("PivotTable6").PivotFields("SLA Result")
+.Orientation = xlRowField
+.Position = 1
+End With
+
+'Insert Data Field
+ActiveSheet.PivotTables("PivotTable6").AddDataField ActiveSheet.PivotTables("PivotTable6").PivotFields("Title"), "Count of Title", xlCount
+With ActiveSheet.PivotTables("PivotTable6").PivotFields("Count of Title")
+    .Calculation = xlPercentOfTotal
+    .NumberFormat = "0.00%"
+End With
+
+'Format Pivot Table
+ActiveSheet.PivotTables("PivotTable6").PivotFields("SLA Result").PivotItems("(blank)").Visible = False
+ActiveSheet.PivotTables("PivotTable6").ShowTableStyleRowStripes = True
+ActiveSheet.PivotTables("PivotTable6").TableStyle2 = "PivotStyleMedium9"
+ActiveSheet.PivotTables("PivotTable6").RowGrand = False
+
+'Copy %Pass for TextBox in DashBaord
+ActiveSheet.Cells(3, 24) = "For Text Box in DashBoard"
+ActiveSheet.Cells(4, 24) = ActiveSheet.PivotTables("PivotTable4").GetPivotData("Title", "SLA Result", "Pass")
+ActiveSheet.Cells(4, 24).NumberFormat = "0.00%"
+
+'Dashboard Sheet
+On Error Resume Next
+Application.DisplayAlerts = False
+Worksheets("Dashboard").Delete
+Sheets.Add Before:=ActiveSheet
+ActiveSheet.Name = "Dashboard"
+Sheets("Dashboard").Select
+Cells.Select
+With Selection.Interior
+    .Pattern = xlSolid
+    .PatternColorIndex = 2
+    .ThemeColor = xlThemeColorDark1
+    .TintAndShade = 0
+    .PatternTintAndShade = 0
+End With
+
+'Layer1
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable2").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(201, xlColumnClustered).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable2")
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("I2").Top
+    .Left = Range("I2").Left
+    .Width = Range("I2:P2").Width
+    .Height = Range("I2:I16").Height
+End With
+
+'Format Chart
+ActiveChart.ApplyLayout (2)
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+If ActiveChart.FullSeriesCollection(1).Name = "Fail" Then
+ActiveChart.FullSeriesCollection(1).Delete
+ElseIf ActiveChart.FullSeriesCollection(1).Name = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+End If
+ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorAccent2
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+ActiveChart.ChartTitle.Delete
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable4").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(216, xlBarClustered).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable4")
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("E17").Top
+    .Left = Range("E17").Left
+    .Width = Range("E17:P17").Width
+    .Height = Range("E17:E29").Height
+End With
+
+'Format Chart
+ActiveChart.ApplyLayout (2)
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+ActiveChart.ChartTitle.Delete
+If ActiveChart.FullSeriesCollection(1).Name = "Fail" Then
+ActiveChart.FullSeriesCollection(1).Select
+Selection.Delete
+ElseIf ActiveChart.FullSeriesCollection(1).Name = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+End If
+ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorAccent2
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+
+'TextBox
+ActiveSheet.Cells(1, 1).Select
+ActiveSheet.Shapes.AddTextbox(msoTextOrientationHorizontal, 0, 0, 0, 0).Select
+Selection.Formula = "=SLAPivotTables!X4"
+Selection.ShapeRange.TextFrame2.VerticalAnchor = msoAnchorMiddle
+Selection.ShapeRange.TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
+Selection.ShapeRange.TextFrame2.TextRange.Font.Size = 17
+Selection.ShapeRange.TextFrame2.TextRange.Font.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+Selection.ShapeRange.TextFrame2.TextRange.Font.Bold = msoTrue
+With Selection
+    .Top = Range("E2").Top
+    .Left = Range("E2").Left
+    .Width = Range("E2:H2").Width
+    .Height = Range("E2:E16").Height
+End With
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable6").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(251, xlDoughnut).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable6")
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("E2").Top
+    .Left = Range("E2").Left
+    .Width = Range("E2:H2").Width
+    .Height = Range("E2:E16").Height
+End With
+
+'Format Chart
+ActiveChart.ChartTitle.Delete
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+ActiveSheet.Shapes("Chart 3").Fill.Visible = msoFalse
+ActiveChart.FullSeriesCollection(1).Format.Line.Visible = msoFalse
+varvalues = ActiveChart.SeriesCollection(1).XValues
+If varvalues(1) = "Fail" Then
+ActiveChart.FullSeriesCollection(1).Points(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorBackground2
+ActiveChart.FullSeriesCollection(1).Points(2).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+ElseIf varvalues(1) = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+End If
+ActiveChart.ChartTitle.Delete
+
+
+'Layer 2
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable1").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(201, xlColumnClustered).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable1")
+ActiveSheet.Shapes("Chart 1").Fill.Visible = msoFalse
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("I2").Top
+    .Left = Range("I2").Left
+    .Width = Range("I2:P2").Width
+    .Height = Range("I2:I16").Height
+End With
+
+'Format Chart
+ActiveChart.ApplyLayout (2)
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+ActiveChart.ChartTitle.Delete
+If ActiveChart.FullSeriesCollection(1).Name = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorAccent2
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+ElseIf ActiveChart.FullSeriesCollection(1).Name = "Fail" Then
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorAccent1
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+With ActiveChart.FullSeriesCollection(2).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorAccent2
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+End If
+ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+ActiveChart.FullSeriesCollection(2).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable3").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(297, xlBarStacked).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable3")
+ActiveSheet.Shapes("Chart 1").Fill.Visible = msoFalse
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("E17").Top
+    .Left = Range("E17").Left
+    .Width = Range("E17:P17").Width
+    .Height = Range("E17:E29").Height
+End With
+
+'Format Chart
+ActiveChart.ApplyLayout (2)
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+ActiveChart.ChartTitle.Delete
+If ActiveChart.FullSeriesCollection(1).Name = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+End If
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+With ActiveChart.FullSeriesCollection(2).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+ActiveChart.FullSeriesCollection(2).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+ActiveChart.SetElement (msoElementLegendBottom)
+
+'Draw Chart
+PSheet.Activate
+ActiveSheet.PivotTables("PivotTable5").PivotSelect "", xlDataAndLabel, True
+ActiveSheet.Shapes.AddChart2(251, xlDoughnut).Select
+ActiveChart.SetSourceData Source:=Range("PivotTable5")
+
+'Move Chart
+ActiveChart.Location Where:=xlLocationAsObject, Name:="Dashboard"
+With ActiveChart.Parent
+    .Top = Range("E2").Top
+    .Left = Range("E2").Left
+    .Width = Range("E2:H2").Width
+    .Height = Range("E2:E16").Height
+End With
+
+'Format Chart
+ActiveChart.ChartTitle.Delete
+ActiveChart.Legend.Delete
+ActiveChart.ShowAllFieldButtons = False
+ActiveChart.SetElement (msoElementDataLabelShow)
+ActiveChart.FullSeriesCollection(1).Format.Line.Visible = msoFalse
+varvalues = ActiveChart.SeriesCollection(1).XValues
+If varvalues(1) = "Pass" Then
+ActiveChart.FullSeriesCollection(1).Format.Fill.ForeColor.ObjectThemeColor = msoThemeColorAccent2
+End If
+With ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Fill
+    .Visible = msoTrue
+    .ForeColor.ObjectThemeColor = msoThemeColorBackground1
+    .ForeColor.TintAndShade = 0
+    .ForeColor.Brightness = 0
+    .Transparency = 0
+    .Solid
+End With
+ActiveChart.FullSeriesCollection(1).DataLabels.Format.TextFrame2.TextRange.Font.Bold = msoTrue
+ActiveChart.ChartTitle.Delete
+
+'Move chart
+With ActiveChart.Parent
+    .Top = Range("E2").Top
+    .Left = Range("E2").Left
+    .Width = Range("E2:H2").Width
+    .Height = Range("E2:E16").Height
+End With
+
+'Add CheckBox
+With ActiveSheet.CheckBoxes.Add(20, 20, 116.4, 19.2)
+   .OnAction = "CheckBox_Click"
+   .Caption = "% Wise"
+End With
+ActiveSheet.Cells(1, 1).Select
+End Sub
